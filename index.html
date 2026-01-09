@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>賓果遊戲</title>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 0; overflow-x: hidden; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 簡易本地儲存（模擬共享儲存）
+        const storage = {
+            get: (key) => {
+                try {
+                    const data = localStorage.getItem(key);
+                    return data ? { value: data } : null;
+                } catch (e) {
+                    console.log('讀取失敗:', e);
+                    return null;
+                }
+            },
+            set: (key, value) => {
+                try {
+                    localStorage.setItem(key, value);
+                    return { value };
+                } catch (e) {
+                    console.log('儲存失敗:', e);
+                    return null;
+                }
+            }
+        };
+
+        function BingoGame() {
+            const [mode, setMode] = useState('select');
+            const [drawnNumbers, setDrawnNumbers] = useState([]);
+            const [currentNumber, setCurrentNumber] = useState(null);
+            const [playerBoard, setPlayerBoard] = useState([]);
+            const [markedCells, setMarkedCells] = useState([]);
+            const [bingoLines, setBingoLines] = useState(0);
+            const [showHistory, setShowHistory] = useState(false);
+            
+            const [hostBoard, setHostBoard] = useState([]);
+            const [hostMarkedCells, setHostMarkedCells] = useState([]);
+            const [hostBingoLines, setHostBingoLines] = useState(0);
+            const [showHostCard, setShowHostCard] = useState(false);
+
+            const [roomId, setRoomId] = useState('');
+            const [isConnected, setIsConnected] = useState(false);
+            const [inputRoomId, setInputRoomId] = useState('');
+
+            const loadSharedData = (room) => {
+                try {
+                    const result = storage.get(`bingo_room_${room}`);
+                    if (result && result.value) {
+                        const data = JSON.parse(result.value);
+                        setDrawnNumbers(data.drawnNumbers || []);
+                        setCurrentNumber(data.currentNumber || null);
+                    }
+                } catch (e) {
+                    console.log('載入資料錯誤:', e);
+                }
+            };
+
+            const saveSharedData = (room, numbers, current) => {
+                try {
+                    const data = { drawnNumbers: numbers, currentNumber: current, timestamp: Date.now() };
+                    storage.set(`bingo_room_${room}`, JSON.stringify(data));
+                } catch (e) {
+                    console.log('儲存資料錯誤:', e);
+                }
+            };
+
+            useEffect(() => {
+                if (mode === 'player' && isConnected && roomId) {
+                    const interval = setInterval(() => {
+                        loadSharedData(roomId);
+                    }, 2000);
+                    return () => clearInterval(interval);
+                }
+            }, [mode, isConnected, roomId]);
+
+            const generateBoard = () => {
+                const numbers = Array.from({ length: 53 }, (_, i) => i + 1);
+                const shuffled = numbers.sort(() => Math.random() - 0.5);
+                const board = [];
+                for (let i = 0; i < 6; i++) {
+                    board.push(shuffled.slice(i * 6, (i + 1) * 6));
+                }
+                return board;
+            };
+
+            const generateRoomId = () => {
+                return Math.random().toString(36).substring(2, 8).toUpperCase();
+            };
+
+            const initPlayerMode = () => {
+                setMode('player');
+                const newBoard = generateBoard();
+                setPlayerBoard(newBoard);
+                setMarkedCells([]);
+                setBingoLines(0);
+                setShowHistory(false);
+                setIsConnected(false);
+                setRoomId('');
+                setDrawnNumbers([]);
+                setCurrentNumber(null);
+                setInputRoomId('');
+            };
+
+            const initHostMode = () => {
+                const newRoomId = generateRoomId();
+                const newBoard = generateBoard();
+                setMode('host');
+                setHostBoard(newBoard);
+                setHostMarkedCells([]);
+                setHostBingoLines(0);
+                setDrawnNumbers([]);
+                setCurrentNumber(null);
+                setShowHostCard(false);
+                setRoomId(newRoomId);
+                setIsConnected(true);
+            };
+
+            const joinRoom = (room) => {
+                const trimmedRoom = room.trim().toUpperCase();
+                if (trimmedRoom.length === 0) return;
+                setRoomId(trimmedRoom);
+                setIsConnected(true);
+                loadSharedData(trimmedRoom);
+            };
+
+            const drawNumber = () => {
+                const remaining = Array.from({ length: 53 }, (_, i) => i + 1)
+                    .filter(num => !drawnNumbers.includes(num));
+                if (remaining.length === 0) return;
+                const randomIndex = Math.floor(Math.random() * remaining.length);
+                const number = remaining[randomIndex];
+                const newDrawnNumbers = [...drawnNumbers, number];
+                setCurrentNumber(number);
+                setDrawnNumbers(newDrawnNumbers);
+                if (roomId) {
+                    saveSharedData(roomId, newDrawnNumbers, number);
+                }
+            };
+
+            const markCell = (rowIndex, colIndex) => {
+                const cellKey = `${rowIndex}-${colIndex}`;
+                if (markedCells.includes(cellKey)) {
+                    setMarkedCells(markedCells.filter(c => c !== cellKey));
+                } else {
+                    setMarkedCells([...markedCells, cellKey]);
+                }
+            };
+
+            const markHostCell = (rowIndex, colIndex) => {
+                const cellKey = `${rowIndex}-${colIndex}`;
+                if (hostMarkedCells.includes(cellKey)) {
+                    setHostMarkedCells(hostMarkedCells.filter(c => c !== cellKey));
+                } else {
+                    setHostMarkedCells([...hostMarkedCells, cellKey]);
+                }
+            };
+
+            const isNumberDrawn = (num) => drawnNumbers.includes(num);
+
+            useEffect(() => {
+                if (mode !== 'player' || playerBoard.length === 0) return;
+                let lines = 0;
+                const marked = new Set(markedCells);
+                for (let i = 0; i < 6; i++) {
+                    if (Array.from({ length: 6 }, (_, j) => `${i}-${j}`).every(c => marked.has(c))) lines++;
+                }
+                for (let j = 0; j < 6; j++) {
+                    if (Array.from({ length: 6 }, (_, i) => `${i}-${j}`).every(c => marked.has(c))) lines++;
+                }
+                if (Array.from({ length: 6 }, (_, i) => `${i}-${i}`).every(c => marked.has(c))) lines++;
+                if (Array.from({ length: 6 }, (_, i) => `${i}-${5 - i}`).every(c => marked.has(c))) lines++;
+                setBingoLines(lines);
+            }, [markedCells, playerBoard, mode]);
+
+            useEffect(() => {
+                if (mode !== 'host' || hostBoard.length === 0) return;
+                let lines = 0;
+                const marked = new Set(hostMarkedCells);
+                for (let i = 0; i < 6; i++) {
+                    if (Array.from({ length: 6 }, (_, j) => `${i}-${j}`).every(c => marked.has(c))) lines++;
+                }
+                for (let j = 0; j < 6; j++) {
+                    if (Array.from({ length: 6 }, (_, i) => `${i}-${j}`).every(c => marked.has(c))) lines++;
+                }
+                if (Array.from({ length: 6 }, (_, i) => `${i}-${i}`).every(c => marked.has(c))) lines++;
+                if (Array.from({ length: 6 }, (_, i) => `${i}-${5 - i}`).every(c => marked.has(c))) lines++;
+                setHostBingoLines(lines);
+            }, [hostMarkedCells, hostBoard, mode]);
+
+            const resetGame = () => {
+                const newDrawnNumbers = [];
+                const newCurrentNumber = null;
+                setDrawnNumbers(newDrawnNumbers);
+                setCurrentNumber(newCurrentNumber);
+                if (mode === 'player') {
+                    setPlayerBoard(generateBoard());
+                    setMarkedCells([]);
+                    setBingoLines(0);
+                } else if (mode === 'host') {
+                    setHostBoard(generateBoard());
+                    setHostMarkedCells([]);
+                    setHostBingoLines(0);
+                    if (roomId) {
+                        saveSharedData(roomId, newDrawnNumbers, newCurrentNumber);
+                    }
+                }
+            };
+
+            if (mode === 'select') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 max-w-md w-full">
+                            <h1 className="text-3xl sm:text-4xl font-bold text-center mb-6 sm:mb-8 text-gray-800">賓果遊戲</h1>
+                            <div className="space-y-4">
+                                <button onClick={initHostMode} className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition duration-200 text-lg">
+                                    🎯 主持人模式
+                                </button>
+                                <button onClick={initPlayerMode} className="w-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-bold py-4 px-6 rounded-xl transition duration-200 text-lg">
+                                    🎮 玩家模式
+                                </button>
+                            </div>
+                            <div className="mt-6 p-4 bg-blue-50 rounded-xl">
+                                <p className="text-sm text-gray-600 text-center">📱 支援多人線上同步遊戲</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (mode === 'host') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-indigo-600 p-3 sm:p-4">
+                        <div className="max-w-4xl mx-auto">
+                            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 mb-4">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h1 className="text-xl sm:text-2xl font-bold text-gray-800">🎯 主持人控制台</h1>
+                                    <button onClick={() => setMode('select')} className="bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm">返回</button>
+                                </div>
+
+                                <div className="bg-gradient-to-r from-green-400 to-blue-500 rounded-xl p-4 mb-4 text-white">
+                                    <div className="text-center">
+                                        <p className="text-sm mb-2">房間代碼（分享給玩家）</p>
+                                        <p className="text-4xl font-bold tracking-wider mb-2">{roomId}</p>
+                                        <p className="text-xs opacity-90">玩家輸入此代碼即可加入遊戲</p>
+                                    </div>
+                                </div>
+
+                                <div className="text-center mb-4">
+                                    {currentNumber ? (
+                                        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl sm:rounded-2xl p-6 sm:p-8 mb-4">
+                                            <div className="text-white text-base sm:text-xl mb-2">當前號碼</div>
+                                            <div className="text-white text-6xl sm:text-8xl font-bold">{currentNumber}</div>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-gray-200 rounded-xl sm:rounded-2xl p-6 sm:p-8 mb-4">
+                                            <div className="text-gray-500 text-xl sm:text-3xl">準備開始抽號</div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-2 sm:gap-4 justify-center mb-4">
+                                        <button onClick={drawNumber} disabled={drawnNumbers.length === 53} className="bg-green-500 hover:bg-green-600 active:bg-green-700 disabled:bg-gray-300 text-white font-bold py-3 px-4 sm:px-8 rounded-xl flex items-center gap-2 text-sm sm:text-base flex-1 justify-center">
+                                            ▶ 抽號碼
+                                        </button>
+                                        <button onClick={resetGame} className="bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-bold py-3 px-4 sm:px-8 rounded-xl flex items-center gap-2 text-sm sm:text-base flex-1 justify-center">
+                                            ↻ 重置
+                                        </button>
+                                    </div>
+
+                                    <div className="text-gray-600 mb-4 text-sm sm:text-base">已抽出: {drawnNumbers.length} / 53</div>
+                                </div>
+
+                                <div className="bg-gray-100 rounded-xl p-3 sm:p-4 mb-4">
+                                    <h3 className="font-bold text-base sm:text-lg mb-3 text-gray-700">已抽出的號碼</h3>
+                                    <div className="grid grid-cols-8 sm:grid-cols-10 gap-1 sm:gap-2 max-h-40 overflow-y-auto">
+                                        {drawnNumbers.map((num, idx) => (
+                                            <div key={idx} className="bg-blue-500 text-white rounded-lg p-1 sm:p-2 text-center font-bold text-sm sm:text-base">{num}</div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <button onClick={() => setShowHostCard(!showHostCard)} className="w-full bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 mb-4">
+                                    {showHostCard ? '👁️ 隱藏我的賓果卡' : '👁️ 顯示我的賓果卡'}
+                                </button>
+
+                                {showHostCard && (
+                                    <div className="bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl p-4">
+                                        <div className="text-center mb-3">
+                                            <div className="inline-block bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-lg sm:text-xl font-bold">
+                                                🎉 我的連線數: {hostBingoLines}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-6 gap-1 sm:gap-2">
+                                            {hostBoard.map((row, rowIndex) =>
+                                                row.map((num, colIndex) => {
+                                                    const cellKey = `${rowIndex}-${colIndex}`;
+                                                    const isMarked = hostMarkedCells.includes(cellKey);
+                                                    const isDrawn = isNumberDrawn(num);
+                                                    return (
+                                                        <button key={cellKey} onClick={() => markHostCell(rowIndex, colIndex)}
+                                                            className={`aspect-square rounded-lg sm:rounded-xl text-lg sm:text-2xl font-bold transition duration-200 relative ${
+                                                                isMarked ? 'bg-gradient-to-br from-red-500 to-pink-500 text-white' :
+                                                                isDrawn ? 'bg-gradient-to-br from-yellow-300 to-orange-400 text-gray-800 border-2 sm:border-4 border-yellow-500 animate-pulse' :
+                                                                'bg-white border-2 sm:border-4 border-gray-300 text-gray-800'
+                                                            }`}>
+                                                            {num}
+                                                            {isDrawn && !isMarked && <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">!</span>}
+                                                        </button>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (mode === 'player' && !isConnected) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 max-w-md w-full">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 text-gray-800">🎮 加入遊戲房間</h1>
+                            <div className="mb-6">
+                                <label className="block text-gray-700 font-bold mb-2">輸入房間代碼</label>
+                                <input type="text" value={inputRoomId} onChange={(e) => setInputRoomId(e.target.value.toUpperCase())} placeholder="例如: ABC123" maxLength={6}
+                                    className="w-full px-4 py-3 text-2xl text-center font-bold border-4 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none uppercase tracking-wider" />
+                            </div>
+                            <button onClick={() => joinRoom(inputRoomId)} disabled={inputRoomId.length === 0}
+                                className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:bg-gray-300 text-white font-bold py-4 px-6 rounded-xl transition duration-200 text-lg mb-4">
+                                加入房間
+                            </button>
+                            <button onClick={() => setMode('select')} className="w-full bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white font-bold py-3 px-6 rounded-xl transition duration-200">返回</button>
+                            <div className="mt-6 p-4 bg-blue-50 rounded-xl">
+                                <p className="text-sm text-gray-600 text-center">請向主持人索取房間代碼</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // 玩家模式 - 已連接
+            if (mode === 'player' && isConnected && playerBoard.length > 0) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-green-500 to-teal-600 p-3 sm:p-4">
+                        <div className="max-w-4xl mx-auto">
+                            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6">
+                                <div className="flex justify-between items-center mb-4">
+                                    <div>
+                                        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">🎮 我的賓果卡</h1>
+                                        <p className="text-sm text-gray-500">房間: {roomId}</p>
+                                    </div>
+                                    <button onClick={() => { setIsConnected(false); setMode('select'); }} className="bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm">離開</button>
+                                </div>
+
+                                <div className="text-center mb-4">
+                                    <div className="inline-block bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full text-lg sm:text-2xl font-bold">
+                                        🎉 連線數: {bingoLines}
+                                    </div>
+                                </div>
+
+                                <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-4 text-center">
+                                    <p className="text-green-700 font-bold">✓ 已連線 - 自動同步開獎紀錄</p>
+                                </div>
+
+                                <div className="grid grid-cols-6 gap-1 sm:gap-2 mb-4">
+                                    {playerBoard.map((row, rowIndex) =>
+                                        row.map((num, colIndex) => {
+                                            const cellKey = `${rowIndex}-${colIndex}`;
+                                            const isMarked = markedCells.includes(cellKey);
+                                            const isDrawn = isNumberDrawn(num);
+                                            return (
+                                                <button key={cellKey} onClick={() => markCell(rowIndex, colIndex)}
+                                                    className={`aspect-square rounded-lg sm:rounded-xl text-lg sm:text-2xl font-bold transition duration-200 relative ${
+                                                        isMarked ? 'bg-gradient-to-br from-red-500 to-pink-500 text-white' :
+                                                        isDrawn ? 'bg-gradient-to-br from-yellow-300 to-orange-400 text-gray-800 border-2 sm:border-4 border-yellow-500 animate-pulse' :
+                                                        'bg-white border-2 sm:border-4 border-gray-300 text-gray-800'
+                                                    }`}>
+                                                    {num}
+                                                    {isDrawn && !isMarked && <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">!</span>}
+                                                </button>
+                                            );
+                                        })
+                                    )}
+                                </div>
+
+                                <div className="flex gap-2 mb-4">
+                                    <button onClick={() => setPlayerBoard(generateBoard())} className="flex-1 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white font-bold py-3 px-3 rounded-xl flex items-center justify-center gap-2 text-sm sm:text-base">
+                                        🔀 重新生成
+                                    </button>
+                                    <button onClick={() => setMarkedCells([])} className="flex-1 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold py-3 px-3 rounded-xl flex items-center justify-center gap-2 text-sm sm:text-base">
+                                        ↻ 清除標記
+                                    </button>
+                                </div>
+
+                                <button onClick={() => setShowHistory(!showHistory)} className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 mb-4">
+                                    {showHistory ? '👁️ 隱藏開獎紀錄' : '👁️ 顯示開獎紀錄'}
+                                </button>
+
+                                {showHistory && (
+                                    <div className="bg-blue-50 rounded-xl p-3 sm:p-4">
+                                        <h3 className="font-bold text-base sm:text-lg mb-3 text-gray-700">開獎紀錄 ({drawnNumbers.length} 個號碼)</h3>
+                                        {drawnNumbers.length > 0 ? (
+                                            <div className="grid grid-cols-8 sm:grid-cols-10 gap-1 sm:gap-2 max-h-60 overflow-y-auto">
+                                                {drawnNumbers.map((num, idx) => (
+                                                    <div key={idx} className="bg-blue-500 text-white rounded-lg p-1 sm:p-2 text-center font-bold text-sm sm:text-base">{num}</div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-gray-500 text-center py-4">等待主持人開始抽號...</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // 載入中或錯誤狀態
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 text-center">
+                        <p className="text-xl text-gray-700">載入中...</p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<BingoGame />, document.getElementById('root'));
+    </script>
+</body>
+</html>
