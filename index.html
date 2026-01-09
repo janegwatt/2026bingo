@@ -176,6 +176,15 @@
 
             const markCell = (rowIndex, colIndex) => {
                 const cellKey = `${rowIndex}-${colIndex}`;
+                const num = playerBoard[rowIndex][colIndex];
+                
+                // 防作弊：檢查號碼是否已開出
+                if (!drawnNumbers.includes(num)) {
+                    alert(`號碼 ${num} 尚未開出，無法標記！`);
+                    return;
+                }
+                
+                // 允許取消標記
                 if (markedCells.includes(cellKey)) {
                     setMarkedCells(markedCells.filter(c => c !== cellKey));
                 } else {
@@ -449,6 +458,7 @@
 
                                 <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-4 text-center">
                                     <p className="text-green-700 font-bold">✓ 已連線 - 自動同步開獎紀錄</p>
+                                    <p className="text-green-600 text-sm mt-1">🔒 賓果卡已鎖定，無法重新生成</p>
                                 </div>
 
                                 <div className="grid grid-cols-6 gap-1 sm:gap-2 mb-4">
@@ -473,12 +483,15 @@
                                 </div>
 
                                 <div className="flex gap-2 mb-4">
-                                    <button onClick={() => setPlayerBoard(generateBoard())} className="flex-1 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white font-bold py-3 px-3 rounded-xl flex items-center justify-center gap-2 text-sm sm:text-base">
-                                        🔀 重新生成
+                                    <button onClick={() => setMarkedCells([])} className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold py-3 px-3 rounded-xl flex items-center justify-center gap-2 text-sm sm:text-base">
+                                        ↻ 清除所有標記
                                     </button>
-                                    <button onClick={() => setMarkedCells([])} className="flex-1 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold py-3 px-3 rounded-xl flex items-center justify-center gap-2 text-sm sm:text-base">
-                                        ↻ 清除標記
-                                    </button>
+                                </div>
+
+                                <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-3 mb-4">
+                                    <p className="text-yellow-800 text-sm text-center">
+                                        🔒 防作弊提示：只能標記已開出的號碼
+                                    </p>
                                 </div>
 
                                 <button onClick={() => setShowHistory(!showHistory)} className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 mb-4">
