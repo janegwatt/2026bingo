@@ -55,6 +55,13 @@
             text-align: center;
             margin-bottom: 1.5rem;
             color: #1f2937;
+            word-break: keep-all;
+            overflow-wrap: break-word;
+        }
+        
+        p, .text-sm {
+            word-break: keep-all;
+            overflow-wrap: break-word;
         }
         
         .btn {
@@ -274,8 +281,14 @@
             margin-bottom: 1rem;
         }
         
-        .header-title h1 { margin: 0; font-size: 1.5rem; }
-        .header-subtitle { font-size: 0.875rem; color: #3b82f6; font-weight: 600; margin-top: 0.25rem; }
+        .header-title h1 { margin: 0; font-size: 1.5rem; word-break: keep-all; }
+        .header-subtitle { 
+            font-size: 0.875rem; 
+            color: #3b82f6; 
+            font-weight: 600; 
+            margin-top: 0.25rem;
+            word-break: keep-all;
+        }
         
         .btn-small {
             padding: 0.5rem 1rem;
@@ -288,6 +301,25 @@
             .bingo-cell { font-size: 1.25rem; }
             .current-number-value { font-size: 3.5rem; }
             .history-grid { grid-template-columns: repeat(6, 1fr); }
+            .header { 
+                flex-direction: column; 
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            .header-title h1 { font-size: 1.25rem; }
+            .btn-small { 
+                width: 100%;
+                padding: 0.5rem;
+            }
+            .flex.flex-gap {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .flex.flex-gap .btn {
+                width: 100%;
+            }
+            .current-number-label { font-size: 1rem; }
+            .badge { font-size: 1.25rem; padding: 0.5rem 1rem; }
         }
         
         .hidden { display: none; }
@@ -450,17 +482,17 @@
                 card.innerHTML = `
                     <h1>賓果遊戲</h1>
                     <div class="form-group">
-                        <label class="label">請輸入你的名字</label>
-                        <input type="text" class="input" id="nameInput" placeholder="例如: 小明" maxlength="10">
+                        <label class="label">請輸入你的名字（僅限英文）</label>
+                        <input type="text" class="input" id="nameInput" placeholder="例如: Alice" maxlength="10" style="text-transform: uppercase;">
                         <p class="text-sm text-gray" style="margin-top: 0.5rem; text-align: center;">
-                            💡 請玩家輸入自己的英文名字
+                            💡 輸入 HOST 進入主持人模式
                         </p>
                     </div>
                     <button class="btn btn-blue mb-1" id="startBtn">
                         開始遊戲
                     </button>
                     <div class="info-box info-blue">
-                        <p class="text-sm font-bold">📱 尾牙同樂遊戲</p>
+                        <p class="text-sm font-bold">📱 適合餐廳多人遊戲</p>
                         <p class="text-sm" style="margin-top: 0.5rem;">主持人抽號報號，玩家自己標記</p>
                     </div>
                 `;
@@ -472,40 +504,41 @@
                 const input = document.getElementById('nameInput');
                 const btn = document.getElementById('startBtn');
                 
-                const updateButton = () => {
-                    btn.disabled = !input.value.trim();
-                };
+                // 限制只能輸入英文字母
+                input.addEventListener('input', (e) => {
+                    let value = e.target.value;
+                    // 移除非英文字母的字符
+                    value = value.replace(/[^a-zA-Z]/g, '');
+                    e.target.value = value;
+                    
+                    // 更新按鈕狀態
+                    btn.disabled = !value.trim();
+                });
                 
-                input.addEventListener('input', updateButton);
-                btn.addEventListener('click', () => {
-                    if (input.value.trim()) {
-                        const name = input.value.trim();
+                const startGame = () => {
+                    const name = input.value.trim();
+                    if (name) {
                         // 檢查是否為主持人
                         if (name.toUpperCase() === 'HOST') {
-                            this.state.hostName = name;
+                            this.state.hostName = name.toUpperCase();
                             this.startHostMode();
                         } else {
-                            this.state.playerName = name;
+                            this.state.playerName = name.toUpperCase();
                             this.startPlayerMode();
                         }
                     }
-                });
+                };
+                
+                btn.addEventListener('click', startGame);
                 
                 // Enter 鍵也可以提交
                 input.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter' && input.value.trim()) {
-                        const name = input.value.trim();
-                        if (name.toUpperCase() === 'HOST') {
-                            this.state.hostName = name;
-                            this.startHostMode();
-                        } else {
-                            this.state.playerName = name;
-                            this.startPlayerMode();
-                        }
+                    if (e.key === 'Enter') {
+                        startGame();
                     }
                 });
                 
-                updateButton();
+                btn.disabled = true;
                 input.focus();
             }
 
@@ -524,8 +557,8 @@
                     <div class="card-game">
                         <div class="header">
                             <div class="header-title">
-                                <h1>  🎯 搖號臺           </h1>
-                                <div class="header-subtitle">   Jane  的賓果卡       </div>
+                                <h1>🎯 主持人控制台</h1>
+                                <div class="header-subtitle">主持人: ${this.state.hostName}</div>
                             </div>
                             <button class="btn btn-gray btn-small" onclick="game.state.mode = 'select'; game.render()">返回</button>
                         </div>
@@ -596,7 +629,7 @@
                         </button>
 
                         <div class="info-box info-yellow">
-                            <p class="text-sm font-bold">💡 提示：聽主持人報號後，點擊對應號碼標記</p>
+                            <p class="text-sm font-bold">💡 提示：聽主持人報號後點擊對應號碼標記</p>
                         </div>
                     </div>
                 `;
