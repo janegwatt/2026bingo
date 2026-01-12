@@ -432,63 +432,45 @@
                 app.innerHTML = '';
                 
                 if (this.state.mode === 'select') {
-                    app.innerHTML = `
-                        <div class="screen bg-purple">
-                            <div class="card">
-                                <h1>賓果遊戲</h1>
-                                <div class="space-y-4">
-                                    <button class="btn btn-blue" onclick="game.initHostMode()">
-                                        🎯 主持人模式
-                                    </button>
-                                    <button class="btn btn-green" onclick="game.initPlayerMode()">
-                                        🎮 玩家模式
-                                    </button>
-                                </div>
-                                <div class="info-box info-blue" style="margin-top: 1.5rem;">
-                                    <p class="text-sm font-bold">📱 淨力2026尾牙賓果同樂</p>
-                                    <p class="text-sm" style="margin-top: 0.5rem;">主持人抽號報號，玩家自己標記</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else if (this.state.mode === 'host_name_input') {
-                    this.renderHostNameInput(app);
+                    this.renderLoginScreen(app);
                 } else if (this.state.mode === 'host') {
                     this.renderHostMode(app);
-                } else if (this.state.mode === 'player_login') {
-                    this.renderPlayerLogin(app);
                 } else if (this.state.mode === 'player') {
                     this.renderPlayerMode(app);
                 }
             }
 
-            renderHostNameInput(app) {
+            renderLoginScreen(app) {
                 const container = document.createElement('div');
-                container.className = 'screen bg-blue';
+                container.className = 'screen bg-purple';
                 
                 const card = document.createElement('div');
                 card.className = 'card';
                 
                 card.innerHTML = `
-                    <h1>🎯 主持人資訊</h1>
+                    <h1>賓果遊戲</h1>
                     <div class="form-group">
                         <label class="label">請輸入你的名字</label>
-                        <input type="text" class="input" id="hostNameInput" placeholder="例如: 小明" maxlength="10">
+                        <input type="text" class="input" id="nameInput" placeholder="例如: 小明" maxlength="10">
+                        <p class="text-sm text-gray" style="margin-top: 0.5rem; text-align: center;">
+                            💡 輸入 "HOST" 進入主持人模式
+                        </p>
                     </div>
-                    <button class="btn btn-blue mb-1" id="hostStartBtn">
+                    <button class="btn btn-blue mb-1" id="startBtn">
                         開始遊戲
                     </button>
-                    <button class="btn btn-gray" onclick="game.state.mode = 'select'; game.render()">
-                        返回
-                    </button>
+                    <div class="info-box info-blue">
+                        <p class="text-sm font-bold">📱 適合餐廳多人遊戲</p>
+                        <p class="text-sm" style="margin-top: 0.5rem;">主持人抽號報號，玩家自己標記</p>
+                    </div>
                 `;
                 
                 container.appendChild(card);
                 app.appendChild(container);
                 
                 // 設定事件監聽
-                const input = document.getElementById('hostNameInput');
-                const btn = document.getElementById('hostStartBtn');
+                const input = document.getElementById('nameInput');
+                const btn = document.getElementById('startBtn');
                 
                 const updateButton = () => {
                     btn.disabled = !input.value.trim();
@@ -497,65 +479,42 @@
                 input.addEventListener('input', updateButton);
                 btn.addEventListener('click', () => {
                     if (input.value.trim()) {
-                        this.state.hostName = input.value.trim();
-                        this.startHostMode();
-                    }
-                });
-                
-                updateButton();
-                input.focus();
-            }
-
-            renderPlayerLogin(app) {
-                const container = document.createElement('div');
-                container.className = 'screen bg-green';
-                
-                const card = document.createElement('div');
-                card.className = 'card';
-                
-                card.innerHTML = `
-                    <h1>🎮 玩家登入</h1>
-                    <div class="form-group">
-                        <label class="label">請輸入你的名字</label>
-                        <input type="text" class="input" id="playerNameInput" placeholder="例如: 小華" maxlength="10">
-                    </div>
-                    <button class="btn btn-green mb-1" id="playerStartBtn">
-                        開始遊戲
-                    </button>
-                    <button class="btn btn-gray" onclick="game.state.mode = 'select'; game.render()">
-                        返回
-                    </button>
-                `;
-                
-                container.appendChild(card);
-                app.appendChild(container);
-                
-                // 設定事件監聽
-                const input = document.getElementById('playerNameInput');
-                const btn = document.getElementById('playerStartBtn');
-                
-                const updateButton = () => {
-                    btn.disabled = !input.value.trim();
-                };
-                
-                input.addEventListener('input', updateButton);
-                btn.addEventListener('click', () => {
-                    if (input.value.trim()) {
-                        this.state.playerName = input.value.trim();
-                        this.startPlayerMode();
+                        const name = input.value.trim();
+                        // 檢查是否為主持人
+                        if (name.toUpperCase() === 'HOST') {
+                            this.state.hostName = name;
+                            this.startHostMode();
+                        } else {
+                            this.state.playerName = name;
+                            this.startPlayerMode();
+                        }
                     }
                 });
                 
                 // Enter 鍵也可以提交
                 input.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter' && input.value.trim()) {
-                        this.state.playerName = input.value.trim();
-                        this.startPlayerMode();
+                        const name = input.value.trim();
+                        if (name.toUpperCase() === 'HOST') {
+                            this.state.hostName = name;
+                            this.startHostMode();
+                        } else {
+                            this.state.playerName = name;
+                            this.startPlayerMode();
+                        }
                     }
                 });
                 
                 updateButton();
                 input.focus();
+            }
+
+            renderHostNameInput(app) {
+                // 此函數已不再使用，可以移除
+            }
+
+            renderPlayerLogin(app) {
+                // 此函數已不再使用，可以移除
             }
 
             renderHostMode(app) {
@@ -688,13 +647,11 @@
             }
 
             initHostMode() {
-                this.state.mode = 'host_name_input';
-                this.render();
+                // 此函數已不再使用，可以移除
             }
 
             initPlayerMode() {
-                this.state.mode = 'player_login';
-                this.render();
+                // 此函數已不再使用，可以移除
             }
 
             startHostMode() {
