@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>賓果遊戲</title>
+    <title></title>
     <style>
         * {
             margin: 0;
@@ -478,19 +478,19 @@
                 card.className = 'card';
                 
                 card.innerHTML = `
-                    <h1>賓果遊戲</h1>
+                    <h1>淨力2026尾牙賓果</h1>
                     <div class="form-group">
-                        <label class="label">請輸入你的名字（僅限英文）</label>
+                        <label class="label">玩家大名</label>
                         <input type="text" class="input" id="nameInput" placeholder="例如: Alice" maxlength="10" style="text-transform: uppercase;">
                         <p class="text-sm text-gray" style="margin-top: 0.5rem; text-align: center;">
-                            💡 輸入 HOST 進入主持人模式
+                            💡 輸入你的英文名字
                         </p>
                     </div>
                     <button class="btn btn-blue mb-1" id="startBtn">
                         開始遊戲
                     </button>
                     <div class="info-box info-blue">
-                        <p class="text-sm font-bold">📱 適合餐廳多人遊戲</p>
+                        <p class="text-sm font-bold">📱 獎金賓果樂翻天</p>
                         <p class="text-sm" style="margin-top: 0.5rem;">主持人抽號報號，玩家自己標記</p>
                     </div>
                 `;
@@ -555,7 +555,7 @@
                     <div class="card-game">
                         <div class="header">
                             <div class="header-title">
-                                <h1>🎯 主持人控制台</h1>
+                                <h1>🎯 賓果搖號</h1>
                                 <div class="header-subtitle">主持人: ${this.state.hostName}</div>
                             </div>
                             <button class="btn btn-gray btn-small" onclick="game.state.mode = 'select'; game.render()">返回</button>
