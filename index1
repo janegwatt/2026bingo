@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title></title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow-x: hidden;
+        }
+        
+        .screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        
+        .bg-purple { background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%); }
+        .bg-blue { background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%); }
+        .bg-green { background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%); }
+        
+        .card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .card-game {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 1.5rem;
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: #1f2937;
+            word-break: keep-all;
+            overflow-wrap: break-word;
+        }
+        
+        p, .text-sm {
+            word-break: keep-all;
+            overflow-wrap: break-word;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.125rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .btn-blue { background: #3b82f6; color: white; }
+        .btn-blue:hover:not(:disabled) { background: #2563eb; }
+        
+        .btn-green { background: #10b981; color: white; }
+        .btn-green:hover:not(:disabled) { background: #059669; }
+        
+        .btn-red { background: #ef4444; color: white; }
+        .btn-red:hover:not(:disabled) { background: #dc2626; }
+        
+        .btn-purple { background: #a855f7; color: white; }
+        .btn-purple:hover:not(:disabled) { background: #9333ea; }
+        
+        .btn-orange { background: #f97316; color: white; }
+        .btn-orange:hover:not(:disabled) { background: #ea580c; }
+        
+        .btn-gray { background: #6b7280; color: white; }
+        .btn-gray:hover:not(:disabled) { background: #4b5563; }
+        
+        .input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 3px solid #d1d5db;
+            border-radius: 12px;
+            font-size: 1.25rem;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .label {
+            display: block;
+            color: #374151;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .space-y-4 > * + * {
+            margin-top: 1rem;
+        }
+        
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .bingo-cell {
+            aspect-ratio: 1;
+            border: 3px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .bingo-cell:active { transform: scale(0.95); }
+        
+        .bingo-cell.marked {
+            background: linear-gradient(135deg, #ef4444 0%, #ec4899 100%);
+            color: white;
+            border-color: #ef4444;
+        }
+        
+        .bingo-cell.marked.in-line {
+            background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+            border-color: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+        
+        .bingo-cell.drawn {
+            background: linear-gradient(135deg, #fcd34d 0%, #fb923c 100%);
+            border: 4px solid #f59e0b;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .alert {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #ef4444;
+            color: white;
+            font-size: 0.75rem;
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .current-number {
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .current-number.active {
+            background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+        }
+        
+        .current-number.inactive {
+            background: #e5e7eb;
+        }
+        
+        .current-number-label {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .current-number.active .current-number-label { color: white; }
+        .current-number.inactive .current-number-label { color: #6b7280; }
+        
+        .current-number-value {
+            font-size: 5rem;
+            font-weight: bold;
+        }
+        
+        .current-number.active .current-number-value { color: white; }
+        .current-number.inactive .current-number-value { color: #9ca3af; }
+        
+        .info-box {
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .info-blue { background: #dbeafe; border: 2px solid #3b82f6; color: #1e40af; }
+        .info-green { background: #d1fae5; border: 2px solid #10b981; color: #065f46; }
+        .info-yellow { background: #fef3c7; border: 2px solid #f59e0b; color: #92400e; }
+        
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        
+        .flex { display: flex; }
+        .flex-gap { gap: 0.5rem; }
+        .justify-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .text-center { text-align: center; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .text-sm { font-size: 0.875rem; }
+        .text-gray { color: #6b7280; }
+        .font-bold { font-weight: bold; }
+        
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .history-number {
+            background: #3b82f6;
+            color: white;
+            border-radius: 8px;
+            padding: 0.5rem;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .header-title h1 { margin: 0; font-size: 1.5rem; word-break: keep-all; }
+        .header-subtitle { 
+            font-size: 0.875rem; 
+            color: #3b82f6; 
+            font-weight: 600; 
+            margin-top: 0.25rem;
+            word-break: keep-all;
+        }
+        
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+        
+        @media (max-width: 640px) {
+            .card, .card-game { padding: 1rem; }
+            h1 { font-size: 1.5rem; }
+            .bingo-cell { font-size: 1.25rem; }
+            .current-number-value { font-size: 3.5rem; }
+            .history-grid { grid-template-columns: repeat(6, 1fr); }
+            .header { 
+                flex-direction: column; 
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            .header-title h1 { font-size: 1.25rem; }
+            .btn-small { 
+                width: 100%;
+                padding: 0.5rem;
+            }
+            .flex.flex-gap {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .flex.flex-gap .btn {
+                width: 100%;
+            }
+            .current-number-label { font-size: 1rem; }
+            .badge { font-size: 1.25rem; padding: 0.5rem 1rem; }
+        }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        class BingoGame {
+            constructor() {
+                this.state = {
+                    mode: 'select',
+                    drawnNumbers: [],
+                    currentNumber: null,
+                    playerBoard: [],
+                    markedCells: [],
+                    bingoLines: 0,
+                    hostBoard: [],
+                    hostMarkedCells: [],
+                    hostBingoLines: 0,
+                    showHostCard: false,
+                    playerName: '',
+                    hostName: '',
+                    playerInLineSet: new Set(),
+                    hostInLineSet: new Set()
+                };
+                this.render();
+            }
+
+            generateBoard() {
+                const numbers = Array.from({ length: 53 }, (_, i) => i + 1);
+                for (let i = numbers.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+                }
+                const board = [];
+                for (let i = 0; i < 6; i++) {
+                    board.push(numbers.slice(i * 6, (i + 1) * 6));
+                }
+                return board;
+            }
+
+            calculateBingoLines(board, markedCells) {
+                let lines = 0;
+                const marked = new Set(markedCells);
+                const inLineSet = new Set();
+                
+                // 檢查橫線
+                for (let i = 0; i < 6; i++) {
+                    const row = Array.from({ length: 6 }, (_, j) => `${i}-${j}`);
+                    if (row.every(c => marked.has(c))) {
+                        lines++;
+                        row.forEach(c => inLineSet.add(c));
+                    }
+                }
+                
+                // 檢查直線
+                for (let j = 0; j < 6; j++) {
+                    const col = Array.from({ length: 6 }, (_, i) => `${i}-${j}`);
+                    if (col.every(c => marked.has(c))) {
+                        lines++;
+                        col.forEach(c => inLineSet.add(c));
+                    }
+                }
+                
+                // 檢查對角線（左上到右下）
+                const diag1 = Array.from({ length: 6 }, (_, i) => `${i}-${i}`);
+                if (diag1.every(c => marked.has(c))) {
+                    lines++;
+                    diag1.forEach(c => inLineSet.add(c));
+                }
+                
+                // 檢查對角線（右上到左下）
+                const diag2 = Array.from({ length: 6 }, (_, i) => `${i}-${5 - i}`);
+                if (diag2.every(c => marked.has(c))) {
+                    lines++;
+                    diag2.forEach(c => inLineSet.add(c));
+                }
+                
+                return { lines, inLineSet };
+            }
+
+            drawNumber() {
+                const remaining = Array.from({ length: 53 }, (_, i) => i + 1)
+                    .filter(num => !this.state.drawnNumbers.includes(num));
+                if (remaining.length === 0) return;
+                
+                const randomIndex = Math.floor(Math.random() * remaining.length);
+                const number = remaining[randomIndex];
+                
+                this.state.drawnNumbers.push(number);
+                this.state.currentNumber = number;
+                this.render();
+            }
+
+            markCell(rowIndex, colIndex, isHost = false) {
+                const cellKey = `${rowIndex}-${colIndex}`;
+                const markedCells = isHost ? this.state.hostMarkedCells : this.state.markedCells;
+                
+                const idx = markedCells.indexOf(cellKey);
+                if (idx > -1) {
+                    markedCells.splice(idx, 1);
+                } else {
+                    markedCells.push(cellKey);
+                }
+                
+                if (isHost) {
+                    const result = this.calculateBingoLines(this.state.hostBoard, this.state.hostMarkedCells);
+                    this.state.hostBingoLines = result.lines;
+                    this.state.hostInLineSet = result.inLineSet;
+                } else {
+                    const result = this.calculateBingoLines(this.state.playerBoard, this.state.markedCells);
+                    this.state.bingoLines = result.lines;
+                    this.state.playerInLineSet = result.inLineSet;
+                }
+                
+                this.render();
+            }
+
+            resetGame() {
+                this.state.drawnNumbers = [];
+                this.state.currentNumber = null;
+                
+                if (this.state.mode === 'player') {
+                    this.state.playerBoard = this.generateBoard();
+                    this.state.markedCells = [];
+                    this.state.bingoLines = 0;
+                    this.state.playerInLineSet = new Set();
+                } else if (this.state.mode === 'host') {
+                    this.state.hostBoard = this.generateBoard();
+                    this.state.hostMarkedCells = [];
+                    this.state.hostBingoLines = 0;
+                    this.state.hostInLineSet = new Set();
+                }
+                
+                this.render();
+            }
+
+            render() {
+                const app = document.getElementById('app');
+                app.innerHTML = '';
+                
+                if (this.state.mode === 'select') {
+                    this.renderLoginScreen(app);
+                } else if (this.state.mode === 'host') {
+                    this.renderHostMode(app);
+                } else if (this.state.mode === 'player') {
+                    this.renderPlayerMode(app);
+                }
+            }
+
+            renderLoginScreen(app) {
+                const container = document.createElement('div');
+                container.className = 'screen bg-purple';
+                
+                const card = document.createElement('div');
+                card.className = 'card';
+                
+                card.innerHTML = `
+                    <h1>胖皮一家人賓果</h1>
+                    <div class="form-group">
+                        <label class="label">玩家大名</label>
+                        <input type="text" class="input" id="nameInput" placeholder="例如: Alice" maxlength="10" style="text-transform: uppercase;">
+                        <p class="text-sm text-gray" style="margin-top: 0.5rem; text-align: center;">
+                            💡 輸入你的英文名字
+                        </p>
+                    </div>
+                    <button class="btn btn-blue mb-1" id="startBtn">
+                        開始遊戲
+                    </button>
+                    <div class="info-box info-blue">
+                        <p class="text-sm font-bold">📱 獎金賓果樂翻天</p>
+                        <p class="text-sm" style="margin-top: 0.5rem;">主持人抽號報號，玩家自己標記</p>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+                app.appendChild(container);
+                
+                // 設定事件監聽
+                const input = document.getElementById('nameInput');
+                const btn = document.getElementById('startBtn');
+                
+                // 限制只能輸入英文字母
+                input.addEventListener('input', (e) => {
+                    let value = e.target.value;
+                    // 移除非英文字母的字符
+                    value = value.replace(/[^a-zA-Z]/g, '');
+                    e.target.value = value;
+                    
+                    // 更新按鈕狀態
+                    btn.disabled = !value.trim();
+                });
+                
+                const startGame = () => {
+                    const name = input.value.trim();
+                    if (name) {
+                        // 檢查是否為主持人（輸入HOST，但顯示為VICKY）
+                        if (name.toUpperCase() === 'HOST') {
+                            this.state.hostName = 'VICKY';  // 顯示為 VICKY
+                            this.startHostMode();
+                        } else {
+                            this.state.playerName = name.toUpperCase();
+                            this.startPlayerMode();
+                        }
+                    }
+                };
+                
+                btn.addEventListener('click', startGame);
+                
+                // Enter 鍵也可以提交
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        startGame();
+                    }
+                });
+                
+                btn.disabled = true;
+                input.focus();
+            }
+
+            renderHostNameInput(app) {
+                // 此函數已不再使用，可以移除
+            }
+
+            renderPlayerLogin(app) {
+                // 此函數已不再使用，可以移除
+            }
+
+            renderHostMode(app) {
+                const container = document.createElement('div');
+                container.className = 'screen bg-blue';
+                container.innerHTML = `
+                    <div class="card-game">
+                        <div class="header">
+                            <div class="header-title">
+                                <h1>🎯 賓果搖號</h1>
+                                <div class="header-subtitle">主持人: ${this.state.hostName}</div>
+                            </div>
+                            <button class="btn btn-gray btn-small" onclick="game.state.mode = 'select'; game.render()">返回</button>
+                        </div>
+
+                        <button class="btn btn-green mb-2" onclick="game.drawNumber()" ${this.state.drawnNumbers.length === 53 ? 'disabled' : ''} style="font-size: 1.5rem; padding: 1.5rem;">
+                            ▶ 抽號碼
+                        </button>
+
+                        <div class="current-number ${this.state.currentNumber ? 'active' : 'inactive'}">
+                            <div class="current-number-label">${this.state.currentNumber ? '當前號碼' : '準備開始抽號'}</div>
+                            ${this.state.currentNumber ? `<div class="current-number-value">${this.state.currentNumber}</div>` : ''}
+                        </div>
+
+                        <div class="text-center mb-2 text-gray" style="font-size: 1.125rem; font-weight: bold;">
+                            已抽出: ${this.state.drawnNumbers.length} / 53
+                        </div>
+
+                        <div class="info-box info-blue mb-2">
+                            <div class="font-bold mb-1" style="font-size: 1.125rem;">已抽出的號碼</div>
+                            <div class="history-grid" style="max-height: none;">
+                                ${this.state.drawnNumbers.length > 0 ? this.state.drawnNumbers.map(num => `<div class="history-number">${num}</div>`).join('') : '<p class="text-sm text-gray">尚未開始抽號</p>'}
+                            </div>
+                        </div>
+
+                        <div class="info-box info-yellow mb-2">
+                            <p class="text-sm font-bold">💡 提示：抽號後請大聲報號給玩家聽</p>
+                        </div>
+
+                        <button class="btn btn-red mb-2" onclick="if(confirm('確定要重置遊戲嗎？所有已抽號碼將清除！')) { game.resetGame(); }">
+                            ↻ 重置遊戲
+                        </button>
+
+                        <button class="btn btn-purple mb-2" onclick="game.state.showHostCard = !game.state.showHostCard; game.render()">
+                            ${this.state.showHostCard ? '👁️ 隱藏我的賓果卡' : '👁️ 顯示我的賓果卡'}
+                        </button>
+
+                        ${this.state.showHostCard ? this.renderBingoCard(this.state.hostBoard, this.state.hostMarkedCells, true, this.state.hostBingoLines) : ''}
+                    </div>
+                `;
+                app.appendChild(container);
+            }
+
+            renderPlayerMode(app) {
+                const container = document.createElement('div');
+                container.className = 'screen bg-green';
+                container.innerHTML = `
+                    <div class="card-game">
+                        <div class="text-center mb-2">
+                            <h1>🎮 ${this.state.playerName} 的賓果卡</h1>
+                        </div>
+
+                        <div class="text-center mb-2">
+                            <div class="badge">🎉 連線數: ${this.state.bingoLines}</div>
+                        </div>
+
+                        ${this.renderBingoCard(this.state.playerBoard, this.state.markedCells, false, this.state.bingoLines)}
+
+                        <div class="info-box info-blue mb-2">
+                            <p class="text-sm font-bold">🔒 防作弊：賓果卡已鎖定，無法重新生成</p>
+                        </div>
+
+                        <div class="info-box info-yellow">
+                            <p class="text-sm font-bold">💡 提示：聽主持人報號後點擊對應號碼標記</p>
+                        </div>
+                    </div>
+                `;
+                app.appendChild(container);
+            }
+
+            renderBingoCard(board, markedCells, isHost, lines) {
+                const markedSet = new Set(markedCells);
+                const drawnSet = new Set(this.state.drawnNumbers);
+                const inLineSet = isHost ? this.state.hostInLineSet : this.state.playerInLineSet;
+                
+                let html = `
+                    <div class="info-box ${isHost ? 'info-green' : 'info-green'} mb-2">
+                        <div class="font-bold">${isHost ? this.state.hostName + ' 的連線數' : '我的連線數'}: ${lines}</div>
+                    </div>
+                    <div class="bingo-grid">
+                `;
+                
+                board.forEach((row, rowIndex) => {
+                    row.forEach((num, colIndex) => {
+                        const cellKey = `${rowIndex}-${colIndex}`;
+                        const isMarked = markedSet.has(cellKey);
+                        const isDrawn = drawnSet.has(num);
+                        const isInLine = inLineSet && inLineSet.has(cellKey);
+                        
+                        let className = 'bingo-cell';
+                        if (isMarked) {
+                            className += ' marked';
+                            if (isInLine) {
+                                className += ' in-line';
+                            }
+                        } else if (isDrawn && isHost) {
+                            // 主持人的卡片：已抽出但未標記的號碼會高亮
+                            className += ' drawn';
+                        }
+                        
+                        html += `
+                            <div class="${className}" onclick="game.markCell(${rowIndex}, ${colIndex}, ${isHost})">
+                                ${num}
+                                ${isDrawn && !isMarked && isHost ? '<span class="alert">!</span>' : ''}
+                            </div>
+                        `;
+                    });
+                });
+                
+                html += '</div>';
+                return html;
+            }
+
+            initHostMode() {
+                // 此函數已不再使用，可以移除
+            }
+
+            initPlayerMode() {
+                // 此函數已不再使用，可以移除
+            }
+
+            startHostMode() {
+                this.state.mode = 'host';
+                this.state.hostBoard = this.generateBoard();
+                this.state.hostMarkedCells = [];
+                this.state.hostBingoLines = 0;
+                this.state.hostInLineSet = new Set();
+                this.state.drawnNumbers = [];
+                this.state.currentNumber = null;
+                this.state.showHostCard = false;
+                this.render();
+            }
+
+            startPlayerMode() {
+                this.state.mode = 'player';
+                this.state.playerBoard = this.generateBoard();
+                this.state.markedCells = [];
+                this.state.bingoLines = 0;
+                this.state.playerInLineSet = new Set();
+                this.render();
+            }
+        }
+
+        const game = new BingoGame();
+    </script>
+</body>
+</html>
